@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Usuario {
+  id              String   @id @default(cuid())
+  nombre_completo String
+  correo          String   @unique
+  rol             String   // administrador | jefe_mantenimiento | tecnico | supervisor
+  estado          String   @default("activo")
+  fecha_creacion  DateTime @default(now())
+}
+
+model Vehiculo {
+  id               String   @id @default(cuid())
+  codigo           String   @unique
+  placa            String   @unique
+  marca            String
+  modelo           String
+  anio             Int
+  chasis           String
+  motor            String
+  tipo_vehiculo    String
+  capacidad_carga  Float
+  combustible      String
+  kilometraje      Float    @default(0)
+  fecha_adquisicion DateTime
+  origen_matricula String   @default("Nacional")
+  pais_origen      String?
+  estado           String   @default("activo")
+  conductor        String?
+  observaciones    String?
+  creado_en        DateTime @default(now())
+  actualizado_en   DateTime @updatedAt
+
+  mantenimientos_preventivos MantenimientoPreventivo[]
+  incidencias                Incidencia[]
+  ordenes_trabajo            OrdenTrabajo[]
+  alertas                    Alerta[]
+}
+
+model TipoMantenimiento {
+  id               String  @id @default(cuid())
+  codigo           String  @unique
+  nombre           String
+  descripcion      String
+  periodicidad_km  Int
+  periodicidad_dias Int
+  estado           String  @default("activo")
+
+  mantenimientos MantenimientoPreventivo[]
+}
+
+model MantenimientoPreventivo {
+  id                        String   @id @default(cuid())
+  codigo                    String   @unique
+  vehiculo_id               String
+  tipo_mantenimiento_id     String
+  km_programado             Float
+  fecha_programada          DateTime
+  estado                    String   @default("pendiente")
+  observaciones             String?
+  creado_en                 DateTime @default(now())
+
+  vehiculo           Vehiculo          @relation(fields: [vehiculo_id], references: [id])
+  tipo_mantenimiento TipoMantenimiento @relation(fields: [tipo_mantenimiento_id], references: [id])
+  orden_trabajo      OrdenTrabajo?
+}
+
+model TipoAveria {
+  id     String @id @default(cuid())
+  codigo String @unique
+  nombre String
+
+  incidencias Incidencia[]
+}
+
+model Incidencia {
+  id                  String   @id @default(cuid())
+  codigo_incidencia   String   @unique
+  vehiculo_id         String
+  fecha_reporte       DateTime
+  kilometraje_actual  Float
+  tipo_averia_id      String
+  descripcion_falla   String
+  diagnostico_tecnico String?
+  solucion_aplicada   String?
+  responsable_id      String?
+  fecha_inicio        DateTime?
+  fecha_finalizacion  DateTime?
+  costo_reparacion    Float?
+  estado              String   @default("reportado")
+  observaciones       String?
+
+  vehiculo      Vehiculo     @relation(fields: [vehiculo_id], references: [id])
+  tipo_averia   TipoAveria   @relation(fields: [tipo_averia_id], references: [id])
+  orden_trabajo OrdenTrabajo?
+}
+
+model OrdenTrabajo {
+  id                        String   @id @default(cuid())
+  codigo                    String   @unique
+  origen                    String   // preventivo | correctivo
+  vehiculo_id               String
+  mantenimiento_preventivo_id String? @unique
+  incidencia_id             String?  @unique
+  tecnico_asignado_id       String?
+  fecha_asignacion          DateTime?
+  fecha_inicio              DateTime?
+  fecha_finalizacion        DateTime?
+  costo                     Float?
+  estado                    String   @default("pendiente")
+  descripcion               String
+
+  vehiculo                   Vehiculo                 @relation(fields: [vehiculo_id], references: [id])
+  mantenimiento_preventivo   MantenimientoPreventivo? @relation(fields: [mantenimiento_preventivo_id], references: [id])
+  incidencia                 Incidencia?              @relation(fields: [incidencia_id], references: [id])
+}
+
+model Alerta {
+  id               String   @id @default(cuid())
+  tipo_alerta      String
+  vehiculo_id      String?
+  mensaje          String
+  fecha_generacion DateTime @default(now())
+  nivel            String   // informativo | advertencia | critico
+  estado           String   @default("no_leida")
+
+  vehiculo Vehiculo? @relation(fields: [vehiculo_id], references: [id])
+}
