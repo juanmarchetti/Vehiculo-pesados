@@ -124,9 +124,13 @@ export default function DashboardPage() {
             </span>
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {alertasRecientes.length > 0 ? alertasRecientes.map((a: any) => (
-              <AlertItem key={a.id} nivel={a.nivel} placa={a.vehiculo?.placa || 'Sistema'} mensaje={a.mensaje} tiempo={new Date(a.fecha_generacion).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} />
-            )) : (
+            {alertasRecientes.length > 0 ? alertasRecientes.map((a: any) => {
+              const adapted = {
+                ...a,
+                vehiculo_placa: a.vehiculo?.placa || a.vehiculo_placa,
+              };
+              return <AlertItem key={a.id} alerta={adapted} compact={true} />;
+            }) : (
               <div style={{ textAlign: 'center', color: 'var(--on-surface-variant)', fontSize: '0.875rem', marginTop: '1rem' }}>
                 No hay alertas activas en el sistema.
               </div>
