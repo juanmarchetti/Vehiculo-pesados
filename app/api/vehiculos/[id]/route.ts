@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const vehiculo = await prisma.vehiculo.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         mantenimientos_preventivos: {
           include: { tipo_mantenimiento: true },
@@ -31,19 +32,20 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await request.json()
     // RN-07: Validate mileage goes up
     if (body.kilometraje) {
-      const current = await prisma.vehiculo.findUnique({ where: { id: params.id }, select: { kilometraje: true } })
+      const current = await prisma.vehiculo.findUnique({ where: { id }, select: { kilometraje: true } })
       if (current && body.kilometraje < current.kilometraje) {
         return NextResponse.json({ error: 'El kilometraje no puede ser menor al actual' }, { status: 400 })
       }
     }
 
     const vehiculo = await prisma.vehiculo.update({
-      where: { id: params.id },
+      where: { id },
       data: body
     })
     return NextResponse.json(vehiculo)
@@ -52,11 +54,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     // RN-06: Logical delete
     const vehiculo = await prisma.vehiculo.update({
-      where: { id: params.id },
+      where: { id },
       data: { estado: 'inactivo' }
     })
     return NextResponse.json(vehiculo)
